@@ -1,0 +1,49 @@
+controller:
+  config:
+    enable-real-ip: "true"
+    real-ip-header: "proxy_protocol"
+    use-forwarded-headers: "true"
+    proxy-real-ip-cidr: "10.100.0.0/16" # restrict this to the IP addresses of NLB
+    ssl-redirect: "false" # we use `special` port to control ssl redirection 
+    server-tokens: "false"
+    use-gzip: "false"
+    use-proxy-protocol: "true"
+    large-client-header-buffers: '1024 256k'
+    proxy-body-size: "30m"
+    proxy-buffer-size: "512k"
+
+  containerPort:
+    http: 80
+    https: 443
+    
+  service:
+    ports:
+      http: 80
+      https: 443
+    targetPorts:
+      http: http
+      https: http
+    annotations:
+      service.beta.kubernetes.io/aws-load-balancer-backend-protocol: "http"
+      service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+      service.beta.kubernetes.io/aws-load-balancer-connection-idle-timeout: '60'
+      service.beta.kubernetes.io/aws-load-balancer-proxy-protocol: "*"
+      service.beta.kubernetes.io/aws-load-balancer-cross-zone-load-balancing-enabled: "true"
+  
+  replicaCount: 1
+  minAvailable: 1
+ 
+  autoscaling:
+    enabled: true
+    minReplicas: 1
+    maxReplicas: 2
+    targetCPUUtilizationPercentage: 75
+    targetMemoryUtilizationPercentage: 200  
+
+  metrics:
+    port: 10254
+    enabled: true
+    service:
+      annotations:
+        prometheus.io/port: "10254"
+        prometheus.io/scrape: "true"
